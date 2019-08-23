@@ -1,0 +1,44 @@
+{
+  "name": "js13k-2019",
+  "version": "1.0.0",
+  "description": "js13k-2019",
+  "main": "src/index.js",
+  "scripts": {
+    "lint": "eslint ./src",
+    "watch": "browser-sync start --server --watch --no-open --no-ghost-mode"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razh/js13k-2019.git"
+  },
+  "author": "razh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/razh/js13k-2019/issues"
+  },
+  "homepage": "https://github.com/razh/js13k-2019#readme",
+  "devDependencies": {
+    "browser-sync": "2.26.7",
+    "del": "5.0.0",
+    "escape-string-regexp": "2.0.0",
+    "eslint": "6.2.1",
+    "eslint-config-prettier": "6.1.0",
+    "eslint-plugin-prettier": "3.1.0",
+    "eslint-plugin-simple-import-sort": "4.0.0",
+    "glsl-tokenizer": "2.1.5",
+    "gulp": "4.0.2",
+    "gulp-htmlmin": "5.0.1",
+    "gulp-load-plugins": "2.0.1",
+    "gulp-replace": "1.0.0",
+    "gulp-size": "3.0.0",
+    "gulp-uglify": "3.0.2",
+    "gulp-zip": "5.0.0",
+    "prettier": "1.18.2",
+    "rollup": "1.20.1",
+    "terser": "4.2.0"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all"
+  }
+}
