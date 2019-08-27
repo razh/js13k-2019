@@ -6,13 +6,6 @@ export var component_create = options => {
   };
 };
 
-export var entity_create = object => {
-  return {
-    ...object,
-    components: [],
-  };
-};
-
 export var entity_add = (entity, ...components) => {
   components.map(component => {
     if (entity_has(entity, component)) {
@@ -22,10 +15,20 @@ export var entity_add = (entity, ...components) => {
     component.parent = entity;
     entity.components.push(component);
   });
+
+  return entity;
 };
 
 export var entity_has = (entity, component) => {
   return entity.components.includes(component);
+};
+
+export var entity_find = (entity, predicate) => {
+  return entity.components.find(predicate);
+};
+
+export var entity_filter = (entity, predicate) => {
+  return entity.components.filter(predicate);
 };
 
 export var entity_remove = (entity, ...components) => {
@@ -41,5 +44,5 @@ export var entity_remove = (entity, ...components) => {
 };
 
 export var entity_update = (entity, ...args) => {
-  entity.components.map(component => component.update(...args));
+  entity.components.map(component => component.update(component, ...args));
 };
