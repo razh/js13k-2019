@@ -14,6 +14,7 @@ import {
   physics_update,
 } from './physics.js';
 import { player_create, player_update } from './player.js';
+import { shadowMesh_create } from './shadowMesh.js';
 import {
   vec3_applyQuaternion,
   vec3_create,
@@ -34,10 +35,11 @@ export var map0 = (gl, scene, camera) => {
   var keys = keys_create();
 
   // Lights
-  var ambient = vec3_create(0.5, 0.5, 0.5);
+  var ambient = vec3_create(0.2, 0.2, 0.2);
 
-  var light0 = light_create(vec3_create(1, 1, 1));
-  vec3_set(light0.position, 128, 48, 0);
+  var light0 = light_create(vec3_create(0.6, 0.5, 1.3));
+  light0.intensity = 3;
+  vec3_set(light0.position, 512, 1024, 256);
 
   var directional = [light0];
   directional.map(light => object3d_add(map, light));
@@ -61,11 +63,33 @@ export var map0 = (gl, scene, camera) => {
   player.scene = map;
 
   var groundMesh = physics_add(
-    mesh_create(boxGeom_create(512, 64, 512), material_create()),
+    mesh_create(boxGeom_create(2048, 64, 2048), material_create()),
     BODY_STATIC,
   );
+  vec3_set(groundMesh.material.color, 0.5, 0.5, 0.5);
   groundMesh.position.y -= 32;
   object3d_add(map, groundMesh);
+
+  // Pillars
+  [
+    [[128, 1024, 128], [256, 512, -512]],
+    [[128, 1024, 128], [-256, 512, -512]],
+    [[128, 1024, 128], [256, 512, 0]],
+    [[128, 1024, 128], [-256, 512, 0]],
+  ].map(([dimensions, position]) => {
+    var mesh = physics_add(
+      mesh_create(boxGeom_create(...dimensions), material_create()),
+      BODY_STATIC,
+    );
+    vec3_fromArray(mesh.position, position);
+    object3d_add(map, mesh);
+
+    var shadowMesh = shadowMesh_create(mesh);
+    shadowMesh.position.y = 0.1;
+    shadowMesh.light = light0;
+    mesh.shadow = shadowMesh;
+    return shadowMesh;
+  });
 
   entity_add(
     map,
