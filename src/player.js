@@ -15,6 +15,7 @@ import {
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_setScalar,
+  vec3_Y,
 } from './vec3.js';
 
 // bg_public.h
@@ -22,6 +23,8 @@ import {
 var PMF_JUMP_HELD = 2;
 
 // bg_local.h
+var STEPSIZE = 18;
+
 var JUMP_VELOCITY = 270;
 
 // movement parameters
@@ -85,6 +88,43 @@ export var player_update = player => {
 
   player_checkGround(player);
 };
+
+var player_stepSlideMove = (() => {
+  var start_o = vec3_create();
+  var start_v = vec3_create();
+  var down_o = vec3_create();
+  var down_v = vec3_create();
+  var up = vec3_create();
+  var down = vec3_create();
+
+  return player => {
+    Object.assign(start_o, player.object.position);
+    Object.assign(start_v, player.body.velocity);
+
+    // TODO: Check if we're colliding with anything.
+    // we got exactly where we wantd to go first try
+
+    Object.assign(down, start_o);
+    down.y -= STEPSIZE;
+    // pm->trace (&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
+    Object.assign(up, vec3_Y);
+    // never step up when you have up velocity
+    if (
+      player.body.velocity.y > 0 &&
+      (trace.fraction === 1 || vec3_dot(trace.plane.normal, up) < 0.7)
+    ) {
+      return;
+    }
+
+    Object.assign(down_o, player.object.position);
+    Object.assign(down_v, player.body.velocity);
+
+    Object.assign(up, start_o);
+    up.y += STEPSIZE;
+
+    // test the player position if they were
+  };
+})();
 
 var player_checkJump = player => {
   if (player.command.up < 10) {

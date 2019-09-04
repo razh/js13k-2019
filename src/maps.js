@@ -91,6 +91,21 @@ export var map0 = (gl, scene, camera) => {
     return shadowMesh;
   });
 
+  // Stairs
+  (() => {
+    var width = 200;
+    var depth = 30;
+    for (var i = 0; i < 10; i++) {
+      var height = (i + 1) * 10;
+      var mesh = physics_add(
+        mesh_create(boxGeom_create(width, height, depth), material_create()),
+        BODY_STATIC,
+      );
+      vec3_set(mesh.position, 0, height / 2, -i * depth - 100);
+      object3d_add(map, mesh);
+    }
+  })();
+
   entity_add(
     map,
     component_create({
