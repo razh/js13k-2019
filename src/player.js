@@ -116,13 +116,14 @@ var player_stepSlideMove = (() => {
       return;
     }
 
-    Object.assign(down_o, player.object.position);
-    Object.assign(down_v, player.body.velocity);
-
     Object.assign(up, start_o);
     up.y += STEPSIZE;
 
-    // test the player position if they were
+    // test the player position if they were a stepheight higher
+    // pm->trace (&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+    if (trace.allsolid) {
+      return;
+    }
   };
 })();
 
