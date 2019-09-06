@@ -89,6 +89,26 @@ export var player_update = player => {
   player_checkGround(player);
 };
 
+var player_overlapsBodies = (() => {
+  var boxA = box3_create();
+  var boxB = box3_create();
+
+  return (player, position, bodies) => {
+    box3_translate(box3_copy(boxA, player.body.boundingBox), position);
+
+    for (var i = 0; i < bodies.length; i++) {
+      var body = bodies[i];
+      box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
+
+      if (box3_overlapsBox(boxA, boxB)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+})();
+
 var player_stepSlideMove = (() => {
   var start_o = vec3_create();
   var start_v = vec3_create();
@@ -317,31 +337,20 @@ var player_accelerate = (player, wishdir, wishspeed, accel) => {
 };
 
 var player_checkGround = (() => {
-  var boxA = box3_create();
-  var boxB = box3_create();
-
-  var delta = vec3_create(0, -0.25, 0);
+  var position = vec3_create();
 
   return player => {
     var bodies = physics_bodies(player.scene).filter(
       body => body !== player.body,
     );
 
-    box3_translate(
-      box3_copy(boxA, player.body.boundingBox),
-      player.object.position,
-    );
-    box3_translate(boxA, delta);
+    Object.assign(position, player.object.position);
+    position.y -= 0.25;
 
-    for (var i = 0; i < bodies.length; i++) {
-      var body = bodies[i];
-      box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
-
-      if (box3_overlapsBox(boxA, boxB)) {
-        player.groundPlane = true;
-        player.walking = true;
-        return;
-      }
+    if (player_overlapsBodies(player, position, bodies)) {
+      player.groundPlane = true;
+      player.walking = true;
+      return;
     }
 
     // If we do not overlap anything, we are in free fall.
