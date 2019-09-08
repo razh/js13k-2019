@@ -93,17 +93,40 @@ export var map0 = (gl, scene, camera) => {
 
   // Stairs
   (() => {
-    var width = 200;
-    var depth = 30;
-    for (var i = 0; i < 10; i++) {
-      var height = (i + 1) * 10;
+    var width = 96;
+    var depth = 16;
+    var height = 8;
+    var count = 10;
+    var x = 0;
+    var z = -100;
+    for (var i = 0; i < count; i++) {
+      var y = (i + 1) * height;
       var mesh = physics_add(
-        mesh_create(boxGeom_create(width, height, depth), material_create()),
+        mesh_create(boxGeom_create(width, y, depth), material_create()),
         BODY_STATIC,
       );
-      vec3_set(mesh.position, 0, height / 2, -i * depth - 100);
+      get_physics_component(mesh).stairs = true;
+      vec3_set(mesh.position, x, y / 2, -i * depth + z);
       object3d_add(map, mesh);
+
+      var shadowMesh = shadowMesh_create(mesh);
+      shadowMesh.position.y = 0.1;
+      shadowMesh.light = light0;
+      mesh.shadow = shadowMesh;
     }
+  })();
+
+  (() => {
+    var mesh = physics_add(
+      mesh_create(boxGeom_create(512, 80, 128), material_create()),
+      BODY_STATIC,
+    );
+    vec3_set(mesh.position, 0, 80 - 40, -100 + 8 - 160 - 64);
+    object3d_add(map, mesh);
+    var shadowMesh = shadowMesh_create(mesh);
+    shadowMesh.position.y = 0.1;
+    shadowMesh.light = light0;
+    mesh.shadow = shadowMesh;
   })();
 
   entity_add(
@@ -139,7 +162,38 @@ export var map0 = (gl, scene, camera) => {
         );
 
         player_update(player);
+        player.time = performance.now();
+        // if (!player.stepTime) {
+        //   player.stepTime = player.time;
+        // }
+        // console.log(player.time);
+        var STEP_TIME = 200;
+        if (window.pdy) {
+          var oldStep;
+          var MAX_STEP_CHANGE = 32;
+          // check for stepping up before a previous step is complete
+          var delta = player.time - player.stepTime;
+          // console.log(delta);
+          if (delta < STEP_TIME) {
+            oldStep = (player.stepChange * (STEP_TIME - delta)) / STEP_TIME;
+          } else {
+            oldStep = 0;
+          }
+          // add this amount
+          player.stepChange = Math.min(oldStep + window.pdy, MAX_STEP_CHANGE);
+          player.stepTime = player.time;
+          window.pdy = 0;
+        }
         Object.assign(cameraObject.position, playerMesh.position);
+
+        // CG_StepOffset
+        // smooth out stair climbing
+        var timeDelta = player.time - player.stepTime;
+        // console.log(timeDelta);
+        if (!Number.isNaN(timeDelta) && timeDelta < STEP_TIME) {
+          cameraObject.position.y -=
+            (player.stepChange * (STEP_TIME - timeDelta)) / STEP_TIME;
+        }
       },
     }),
   );
