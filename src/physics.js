@@ -22,6 +22,7 @@ import {
   vec3_normalize,
   vec3_set,
   vec3_sub,
+  vec3_subVectors,
 } from './vec3.js';
 
 export var BODY_STATIC = 1;
@@ -131,6 +132,82 @@ var narrowPhase = (() => {
     }
   };
 })();
+
+export var sweptAABB = (() => {
+  var velocity = vec3_create();
+
+  return (bodyA, bodyB, boxA, boxB) => {
+    if (box3_overlapsBox(boxA, boxB)) {
+      return 0;
+    }
+
+    vec3_subVectors(velocity, bodyB.velocity, bodyA.velocity);
+    var vx = velocity.x;
+    var vy = velocity.y;
+    var vz = velocity.z;
+
+    // d0 is negative side or 'left' side.
+    // d1 is positive or 'right' side.
+    var d0x = boxB.max.x - boxA.min.x;
+    var d1x = boxA.max.x - boxB.min.x;
+
+    var d0y = boxB.max.y - boxA.min.y;
+    var d1y = boxA.max.y - boxB.min.y;
+
+    var d0z = boxB.max.z - boxA.min.z;
+    var d1z = boxA.max.z - boxB.min.z;
+
+    var t0 = 0;
+    var t1 = Infinity;
+
+    if (vx < 0) {
+      if (d0x < 0) return;
+      if (d0x > 0) t1 = Math.min(-d0x / vx, t1);
+      if (d1x < 0) t0 = Math.max(d1x / vx, t0);
+    } else if (vx > 0) {
+      if (d1x < 0) return;
+      if (d1x > 0) t1 = Math.min(d1x / vx, t1);
+      if (d0x < 0) t0 = Math.max(-d0x / vx, t0);
+    }
+
+    if (t0 > t1) return;
+
+    if (vy < 0) {
+      if (d0y < 0) return;
+      if (d0y > 0) t1 = Math.min(-d0y / vy, t1);
+      if (d1y < 0) t0 = Math.max(d1y / vx, t0);
+    } else if (vy > 0) {
+      if (d1y < 0) return;
+      if (d1y > 0) t1 = Math.min(d1y / vy, t1);
+      if (d0y < 0) t0 = Math.max(-d0y / vy, t0);
+    }
+
+    if (t0 > t1) return;
+
+    if (vz < 0) {
+      if (d0z < 0) return;
+      if (d0z > 0) t1 = Math.min(-d0z / vz, t1);
+      if (d1z < 0) t0 = Math.max(d1z / vx, t0);
+    } else if (vz > 0) {
+      if (d1z < 0) return;
+      if (d1z > 0) t1 = Math.min(d1z / vz, t1);
+      if (d0z < 0) t0 = Math.max(-d0z / vz, t0);
+    }
+
+    if (t0 > t1) return;
+
+    return t0;
+  };
+})();
+
+console.log(
+  sweptAABB(
+    { velocity: vec3_create(1, 0, 0) },
+    { velocity: vec3_create() },
+    { min: vec3_create(-2, -2, -2), max: vec3_create(2, 2, 2) },
+    { min: vec3_create(4, 0, 4), max: vec3_create(8, 4, 8) },
+  ),
+);
 
 export var physics_update = (() => {
   var boxA = box3_create();
