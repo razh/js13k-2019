@@ -27,12 +27,9 @@ import {
 export var BODY_STATIC = 1;
 export var BODY_DYNAMIC = 2;
 
-export var SHAPE_BOX = 1;
-
 export var physics_create = (entity, physics) => {
   return component_create({
     physics,
-    shape: SHAPE_BOX,
     boundingBox: box3_setFromObject(box3_create(), entity),
     velocity: vec3_create(),
     update(component, dt) {
@@ -64,64 +61,62 @@ export var physics_bodies = object => {
 var narrowPhase = (() => {
   var penetration = vec3_create();
 
-  return {
-    [SHAPE_BOX | SHAPE_BOX](bodyA, bodyB, boxA, boxB) {
-      // Determine overlap.
-      // d0 is negative side or 'left' side.
-      // d1 is positive or 'right' side.
-      var d0x = boxB.max.x - boxA.min.x;
-      var d1x = boxA.max.x - boxB.min.x;
+  return (bodyA, bodyB, boxA, boxB) => {
+    // Determine overlap.
+    // d0 is negative side or 'left' side.
+    // d1 is positive or 'right' side.
+    var d0x = boxB.max.x - boxA.min.x;
+    var d1x = boxA.max.x - boxB.min.x;
 
-      var d0y = boxB.max.y - boxA.min.y;
-      var d1y = boxA.max.y - boxB.min.y;
+    var d0y = boxB.max.y - boxA.min.y;
+    var d1y = boxA.max.y - boxB.min.y;
 
-      var d0z = boxB.max.z - boxA.min.z;
-      var d1z = boxA.max.z - boxB.min.z;
+    var d0z = boxB.max.z - boxA.min.z;
+    var d1z = boxA.max.z - boxB.min.z;
 
-      // Only overlapping on an axis if both ranges intersect.
-      var dx = 0;
-      if (d0x > 0 && d1x > 0) {
-        dx = d0x < d1x ? d0x : -d1x;
-      }
+    // Only overlapping on an axis if both ranges intersect.
+    var dx = 0;
+    if (d0x > 0 && d1x > 0) {
+      dx = d0x < d1x ? d0x : -d1x;
+    }
 
-      var dy = 0;
-      if (d0y > 0 && d1y > 0) {
-        dy = d0y < d1y ? d0y : -d1y;
-      }
+    var dy = 0;
+    if (d0y > 0 && d1y > 0) {
+      dy = d0y < d1y ? d0y : -d1y;
+    }
 
-      var dz = 0;
-      if (d0z > 0 && d1z > 0) {
-        dz = d0z < d1z ? d0z : -d1z;
-      }
+    var dz = 0;
+    if (d0z > 0 && d1z > 0) {
+      dz = d0z < d1z ? d0z : -d1z;
+    }
 
-      // Determine minimum axis of separation.
-      var adx = Math.abs(dx);
-      var ady = Math.abs(dy);
-      var adz = Math.abs(dz);
+    // Determine minimum axis of separation.
+    var adx = Math.abs(dx);
+    var ady = Math.abs(dy);
+    var adz = Math.abs(dz);
 
-      if (adx < ady && adx < adz) {
-        vec3_set(penetration, dx, 0, 0);
-      } else if (ady < adz) {
-        vec3_set(penetration, 0, dy, 0);
-      } else {
-        vec3_set(penetration, 0, 0, dz);
-      }
+    if (adx < ady && adx < adz) {
+      vec3_set(penetration, dx, 0, 0);
+    } else if (ady < adz) {
+      vec3_set(penetration, 0, dy, 0);
+    } else {
+      vec3_set(penetration, 0, 0, dz);
+    }
 
-      var objectA = bodyA.parent;
-      var objectB = bodyB.parent;
+    var objectA = bodyA.parent;
+    var objectB = bodyB.parent;
 
-      if (bodyA.physics === BODY_STATIC) {
-        vec3_addScaledVector(objectB.position, penetration, -OVERCLIP);
-        pm_clipVelocity(bodyB.velocity, vec3_normalize(penetration), OVERCLIP);
-      } else if (bodyB.physics === BODY_STATIC) {
-        vec3_addScaledVector(objectA.position, penetration, OVERCLIP);
-        pm_clipVelocity(bodyA.velocity, vec3_normalize(penetration), OVERCLIP);
-      } else {
-        vec3_multiplyScalar(penetration, 0.5);
-        vec3_add(objectA.position, penetration);
-        vec3_sub(objectB.position, penetration);
-      }
-    },
+    if (bodyA.physics === BODY_STATIC) {
+      vec3_addScaledVector(objectB.position, penetration, -OVERCLIP);
+      pm_clipVelocity(bodyB.velocity, vec3_normalize(penetration), OVERCLIP);
+    } else if (bodyB.physics === BODY_STATIC) {
+      vec3_addScaledVector(objectA.position, penetration, OVERCLIP);
+      pm_clipVelocity(bodyA.velocity, vec3_normalize(penetration), OVERCLIP);
+    } else {
+      vec3_multiplyScalar(penetration, 0.5);
+      vec3_add(objectA.position, penetration);
+      vec3_sub(objectB.position, penetration);
+    }
   };
 })();
 
@@ -151,12 +146,7 @@ export var physics_update = (() => {
         box3_translate(box3_copy(boxB, bodyB.boundingBox), objectB.position);
 
         if (box3_overlapsBox(boxA, boxB)) {
-          var contact = narrowPhase[bodyA.shape | bodyB.shape](
-            bodyA,
-            bodyB,
-            boxA,
-            boxB,
-          );
+          var contact = narrowPhase(bodyA, bodyB, boxA, boxB);
           if (contact) {
             contacts.push(contact);
           }
