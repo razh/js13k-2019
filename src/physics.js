@@ -18,6 +18,7 @@ import {
   vec3_add,
   vec3_addScaledVector,
   vec3_create,
+  vec3_length,
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_set,
@@ -108,21 +109,9 @@ var narrowPhase = (() => {
     var objectB = bodyB.parent;
 
     if (bodyA.physics === BODY_STATIC) {
-      if (bodyA.stairs && dy > 0 && dy < 18) {
-        vec3_set(penetration, 0, dy, 0);
-        if (dy > 2) {
-          window.pdy = dy;
-        }
-      }
       vec3_addScaledVector(objectB.position, penetration, -OVERCLIP);
       pm_clipVelocity(bodyB.velocity, vec3_normalize(penetration), OVERCLIP);
     } else if (bodyB.physics === BODY_STATIC) {
-      if (bodyB.stairs && dy > 0 && dy < 18) {
-        vec3_set(penetration, 0, dy, 0);
-        if (dy > 2) {
-          window.pdy = dy;
-        }
-      }
       vec3_addScaledVector(objectA.position, penetration, OVERCLIP);
       pm_clipVelocity(bodyA.velocity, vec3_normalize(penetration), OVERCLIP);
     } else {
@@ -130,6 +119,9 @@ var narrowPhase = (() => {
       vec3_add(objectA.position, penetration);
       vec3_sub(objectB.position, penetration);
     }
+
+    // Return distance traveled.
+    return vec3_length(penetration);
   };
 })();
 
@@ -209,8 +201,6 @@ export var physics_update = (() => {
   var boxB = box3_create();
 
   return bodies => {
-    var contacts = [];
-
     for (var i = 0; i < bodies.length; i++) {
       var bodyA = bodies[i];
 
@@ -227,14 +217,9 @@ export var physics_update = (() => {
         physics_setBoxFromBody(boxB, bodyB);
 
         if (box3_overlapsBox(boxA, boxB)) {
-          var contact = narrowPhase(bodyA, bodyB, boxA, boxB);
-          if (contact) {
-            contacts.push(contact);
-          }
+          narrowPhase(bodyA, bodyB, boxA, boxB);
         }
       }
     }
-
-    return contacts;
   };
 })();
