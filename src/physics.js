@@ -209,6 +209,10 @@ console.log(
   ),
 );
 
+var physics_setBoxFromBody = (box, body) => {
+  return box3_translate(box3_copy(box, body.boundingBox), body.parent.position);
+};
+
 export var physics_update = (() => {
   var boxA = box3_create();
   var boxB = box3_create();
@@ -228,11 +232,8 @@ export var physics_update = (() => {
         }
 
         // Two dynamic bodies, or one static and one dynamic body.
-        var objectA = bodyA.parent;
-        var objectB = bodyB.parent;
-
-        box3_translate(box3_copy(boxA, bodyA.boundingBox), objectA.position);
-        box3_translate(box3_copy(boxB, bodyB.boundingBox), objectB.position);
+        physics_setBoxFromBody(boxA, bodyA);
+        physics_setBoxFromBody(boxB, bodyB);
 
         if (box3_overlapsBox(boxA, boxB)) {
           var contact = narrowPhase(bodyA, bodyB, boxA, boxB);
