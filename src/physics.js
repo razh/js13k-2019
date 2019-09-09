@@ -200,15 +200,6 @@ export var sweptAABB = (() => {
   };
 })();
 
-console.log(
-  sweptAABB(
-    { velocity: vec3_create(1, 0, 0) },
-    { velocity: vec3_create() },
-    { min: vec3_create(-2, -2, -2), max: vec3_create(2, 2, 2) },
-    { min: vec3_create(4, 0, 4), max: vec3_create(8, 4, 8) },
-  ),
-);
-
 var physics_setBoxFromBody = (box, body) => {
   return box3_translate(box3_copy(box, body.boundingBox), body.parent.position);
 };

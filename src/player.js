@@ -4,7 +4,7 @@ import {
   box3_overlapsBox,
   box3_translate,
 } from './box3.js';
-import { physics_bodies } from './physics.js';
+import { physics_bodies, sweptAABB } from './physics.js';
 import {
   OVERCLIP,
   pm_clipVelocity,
@@ -15,6 +15,7 @@ import {
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_setScalar,
+  vec3_subVectors,
   vec3_Y,
 } from './vec3.js';
 
@@ -109,11 +110,44 @@ var player_overlapsBodies = (() => {
   };
 })();
 
+var player_traceBodies = (() => {
+  var boxA = box3_create();
+  var boxB = box3_create();
+
+  var originalVelocity = vec3_create();
+  var velocity = vec3_create();
+
+  return (player, start, end, bodies) => {
+    Object.assign(originalVelocity, player.body.velocity);
+
+    vec3_subVectors(velocity, end, start);
+    box3_translate(box3_copy(boxA, player.body.boundingBox), start);
+
+    var min = 1;
+
+    for (var i = 0; i < bodies.length; i++) {
+      var body = bodies[i];
+      box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
+      min = Math.min(sweptAABB(player, body, boxA, boxB), min);
+    }
+
+    Object.assign(player.body.velocity, originalVelocity);
+
+    return min;
+  };
+})();
+
+var player_slideMove = (() => {
+  return (player, gravity) => {
+    if (gravity) {
+      player.body.velocity.y -= player.gravity * player.dt;
+    }
+  };
+})();
+
 var player_stepSlideMove = (() => {
   var start_o = vec3_create();
   var start_v = vec3_create();
-  var down_o = vec3_create();
-  var down_v = vec3_create();
   var up = vec3_create();
   var down = vec3_create();
   var position = vec3_create();
@@ -158,8 +192,6 @@ var player_stepSlideMove = (() => {
 var player_stepSlideMove2 = (() => {
   var start_o = vec3_create();
   var start_v = vec3_create();
-  var down_o = vec3_create();
-  var down_v = vec3_create();
   var up = vec3_create();
   var down = vec3_create();
   var position = vec3_create();
@@ -196,10 +228,6 @@ var player_stepSlideMove2 = (() => {
     if (player_overlapsBodies(player, up, bodies)) {
       return;
     }
-
-    requestAnimationFrame(() => {
-      player.object.position.y += STEPSIZE;
-    });
 
     // test the player position if they were a stepheight higher
     // pm->trace (&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
