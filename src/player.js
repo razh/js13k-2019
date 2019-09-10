@@ -1,6 +1,7 @@
 import {
   box3_copy,
   box3_create,
+  box3_expandByPoint,
   box3_overlapsBox,
   box3_translate,
 } from './box3.js';
@@ -110,25 +111,44 @@ var player_overlapsBodies = (() => {
   };
 })();
 
-var player_traceBodies = (() => {
+var player_trace = (() => {
   var boxA = box3_create();
   var boxB = box3_create();
+  var sweptBoxA = box3_create();
 
   var originalVelocity = vec3_create();
   var velocity = vec3_create();
 
-  return (player, start, end, bodies) => {
+  return (player, start, end) => {
+    var bodies = physics_bodies(player.scene).filter(
+      body => body !== player.body,
+    );
+
     Object.assign(originalVelocity, player.body.velocity);
 
     vec3_subVectors(velocity, end, start);
+    Object.assign(player.body.velocity, velocity);
+
     box3_translate(box3_copy(boxA, player.body.boundingBox), start);
+    box3_translate(box3_copy(sweptBoxA, player.body.boundingBox), end);
+    box3_expandByPoint(sweptBoxA, boxA.min);
+    box3_expandByPoint(sweptBoxA, boxA.max);
 
     var min = 1;
-
+    var t;
     for (var i = 0; i < bodies.length; i++) {
       var body = bodies[i];
+      body.parent.material.color.x = 1;
       box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
-      min = Math.min(sweptAABB(player, body, boxA, boxB), min);
+      if (!box3_overlapsBox(sweptBoxA, boxB)) {
+        continue;
+      }
+      t = sweptAABB(player.body, body, boxA, boxB);
+      if (t === 0) body.parent.material.color.x = 0;
+      // console.log(JSON.stringify([player.body.velocity, body.velocity, boxA, boxB], null, 2));
+      if (t !== undefined) {
+        min = Math.min(t, min);
+      }
     }
 
     Object.assign(player.body.velocity, originalVelocity);
@@ -432,21 +452,17 @@ var player_checkGround = (() => {
   var position = vec3_create();
 
   return player => {
-    var bodies = physics_bodies(player.scene).filter(
-      body => body !== player.body,
-    );
-
     Object.assign(position, player.object.position);
     position.y -= 0.25;
 
-    if (player_overlapsBodies(player, position, bodies)) {
-      player.groundPlane = true;
-      player.walking = true;
+    // if the trace didn't hit anything, we are in free fall
+    if (player_trace(player, player.object.position, position) === 1) {
+      player.groundPlane = false;
+      player.walking = false;
       return;
     }
 
-    // If we do not overlap anything, we are in free fall.
-    player.groundPlane = false;
-    player.walking = false;
+    player.groundPlane = true;
+    player.walking = true;
   };
 })();
