@@ -138,14 +138,12 @@ var player_trace = (() => {
     var t;
     for (var i = 0; i < bodies.length; i++) {
       var body = bodies[i];
-      body.parent.material.color.x = 1;
       box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
       if (!box3_overlapsBox(sweptBoxA, boxB)) {
         continue;
       }
+
       t = sweptAABB(player.body, body, boxA, boxB);
-      if (t === 0) body.parent.material.color.x = 0;
-      // console.log(JSON.stringify([player.body.velocity, body.velocity, boxA, boxB], null, 2));
       if (t !== undefined) {
         min = Math.min(t, min);
       }
