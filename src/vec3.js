@@ -166,6 +166,17 @@ export var vec3_normalize = v => {
   return vec3_divideScalar(v, vec3_length(v) || 1);
 };
 
+export var vec3_lerp = (a, b, t) => {
+  a.x += (b.x - a.x) * t;
+  a.y += (b.y - a.y) * t;
+  a.z += (b.z - a.z) * t;
+  return a;
+};
+
+export var vec3_lerpVectors = (v, a, b, t) => {
+  return vec3_add(vec3_multiplyScalar(vec3_subVectors(v, b, a), t), a);
+};
+
 export var vec3_cross = (a, b) => {
   var { x, y, z } = a;
 
