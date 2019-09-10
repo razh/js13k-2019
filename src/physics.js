@@ -167,7 +167,7 @@ export var sweptAABB = (() => {
     if (vy < 0) {
       if (d0y < 0) return;
       if (d0y > 0) t1 = Math.min(-d0y / vy, t1);
-      if (d1y < 0) t0 = Math.max(d1y / vx, t0);
+      if (d1y < 0) t0 = Math.max(d1y / vy, t0);
     } else if (vy > 0) {
       if (d1y < 0) return;
       if (d1y > 0) t1 = Math.min(d1y / vy, t1);
@@ -179,7 +179,7 @@ export var sweptAABB = (() => {
     if (vz < 0) {
       if (d0z < 0) return;
       if (d0z > 0) t1 = Math.min(-d0z / vz, t1);
-      if (d1z < 0) t0 = Math.max(d1z / vx, t0);
+      if (d1z < 0) t0 = Math.max(d1z / vz, t0);
     } else if (vz > 0) {
       if (d1z < 0) return;
       if (d1z > 0) t1 = Math.min(d1z / vz, t1);
