@@ -321,6 +321,7 @@ var player_walkMove = (() => {
       return;
     }
 
+    player_slideMove(player, false);
     // player_stepSlideMove2(player);
   };
 })();
@@ -367,7 +368,8 @@ var player_airMove = (() => {
       );
     }
 
-    player.body.velocity.y -= player.gravity * player.dt;
+      player_slideMove(player, true);
+    // player.body.velocity.y -= player.gravity * player.dt;
   };
 })();
 
