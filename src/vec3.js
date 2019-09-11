@@ -166,6 +166,10 @@ export var vec3_normalize = v => {
   return vec3_divideScalar(v, vec3_length(v) || 1);
 };
 
+export var vec3_setLength = (v, length) => {
+  return vec3_multiplyScalar(vec3_normalize(v), length);
+};
+
 export var vec3_lerp = (a, b, t) => {
   a.x += (b.x - a.x) * t;
   a.y += (b.y - a.y) * t;
