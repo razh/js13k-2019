@@ -237,6 +237,7 @@ var player_slideMove = (() => {
       player_trace(player, trace, player.object.position, end);
 
       if (trace.allsolid) {
+        player.body.velocity.y = 0;
         return true;
       }
 
@@ -273,6 +274,7 @@ var player_slideMove = (() => {
       if (i < numplanes) {
         continue;
       }
+
       Object.assign(planes[numplanes], trace.normal);
       numplanes++;
 
@@ -335,7 +337,6 @@ var player_slideMove = (() => {
           }
 
           // see if there is a third plane that the new move enters
-
           for (var k = 0; k < numplanes; k++) {
             if (k === i || k === j) {
               continue;
@@ -356,7 +357,7 @@ var player_slideMove = (() => {
         Object.assign(player.body.velocity, clipVelocity);
 
         if (gravity) {
-          Object.assign(endClipVelocity, endVelocity);
+          Object.assign(endVelocity, endClipVelocity);
         }
 
         break;
@@ -383,7 +384,7 @@ var player_stepSlideMove = (() => {
     Object.assign(start_v, player.body.velocity);
 
     // we got exactly where we wanted to go first try
-    if (player_slideMove(player, gravity) === 0) {
+    if (player_slideMove(player, gravity) === false) {
       return;
     }
 

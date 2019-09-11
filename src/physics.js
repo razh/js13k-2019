@@ -34,7 +34,7 @@ export var physics_create = (entity, physics) => {
     boundingBox: box3_setFromObject(box3_create(), entity),
     velocity: vec3_create(),
     update(component, dt) {
-      vec3_addScaledVector(component.parent.position, component.velocity, dt);
+      // vec3_addScaledVector(component.parent.position, component.velocity, dt);
     },
   });
 };
@@ -133,9 +133,6 @@ export var sweptAABB = (() => {
     if (box3_overlapsBox(boxA, boxB)) {
       trace.allsolid = true;
       trace.fraction = 0;
-      Object.assign(trace.endpos, bodyA.parent.position);
-      calculatePenetration(trace.normal, bodyA, bodyB, boxA, boxB);
-      vec3_normalize(trace.normal);
       return;
     }
 
@@ -162,15 +159,15 @@ export var sweptAABB = (() => {
       if (d0x < 0) return;
       if (d0x > 0) t1 = Math.min(-d0x / vx, t1);
       if (d1x < 0) {
-        overlap.x = d1x;
-        t0 = Math.max(overlap.x / vx, t0);
+        overlap.x = d1x / vx;
+        t0 = Math.max(overlap.x, t0);
       }
     } else if (vx > 0) {
       if (d1x < 0) return;
       if (d1x > 0) t1 = Math.min(d1x / vx, t1);
       if (d0x < 0) {
-        overlap.x = -d0x;
-        t0 = Math.max(overlap.x / vx, t0);
+        overlap.x = -d0x / vx;
+        t0 = Math.max(overlap.x, t0);
       }
     }
 
@@ -180,15 +177,15 @@ export var sweptAABB = (() => {
       if (d0y < 0) return;
       if (d0y > 0) t1 = Math.min(-d0y / vy, t1);
       if (d1y < 0) {
-        overlap.y = d1y;
-        t0 = Math.max(overlap.y / vy, t0);
+        overlap.y = d1y / vy;
+        t0 = Math.max(overlap.y, t0);
       }
     } else if (vy > 0) {
       if (d1y < 0) return;
       if (d1y > 0) t1 = Math.min(d1y / vy, t1);
       if (d0y < 0) {
-        overlap.y = -d0y;
-        t0 = Math.max(overlap.y / vy, t0);
+        overlap.y = -d0y / vy;
+        t0 = Math.max(overlap.y, t0);
       }
     }
 
@@ -198,15 +195,15 @@ export var sweptAABB = (() => {
       if (d0z < 0) return;
       if (d0z > 0) t1 = Math.min(-d0z / vz, t1);
       if (d1z < 0) {
-        overlap.z = d1z;
-        t0 = Math.max(overlap.z / vz, t0);
+        overlap.z = d1z / vz;
+        t0 = Math.max(overlap.z, t0);
       }
     } else if (vz > 0) {
       if (d1z < 0) return;
       if (d1z > 0) t1 = Math.min(d1z / vz, t1);
       if (d0z < 0) {
-        overlap.z = -d0z;
-        t0 = Math.max(overlap.z / vz, t0);
+        overlap.z = -d0z / vz;
+        t0 = Math.max(overlap.z, t0);
       }
     }
 
@@ -249,7 +246,7 @@ export var physics_update = (() => {
         physics_setBoxFromBody(boxB, bodyB);
 
         if (box3_overlapsBox(boxA, boxB)) {
-          narrowPhase(bodyA, bodyB, boxA, boxB);
+          // narrowPhase(bodyA, bodyB, boxA, boxB);
         }
       }
     }
