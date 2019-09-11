@@ -7,15 +7,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
+    html, body {
+      height: 100%;
+    }
+
     body {
+      position: relative;
       margin: 0;
       background: #000;
+      color: #fff;
       overflow: hidden;
+      font-family: Avenir, Helvetica, Arial, sans-serif;
+    }
+
+    .e {
+      position: absolute;
+      bottom: 0.25em;
+      left: 0.4em;
+      font-size: 10vw;
+      font-weight: 600;
+      line-height: 1;
+      text-transform: uppercase;
+      user-select: none;
     }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
+  <div class="e">Backblast</div>
   <script type="module" src="./src/index.js"></script>
 </body>
 </html>
