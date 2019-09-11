@@ -21,6 +21,7 @@ import {
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_set,
+  vec3_setScalar,
   vec3_sub,
   vec3_subVectors,
 } from './vec3.js';
@@ -126,7 +127,7 @@ var narrowPhase = (() => {
 })();
 
 export var sweptAABB = (() => {
-  var overlap = vec3_create();
+  var time = vec3_create();
   var velocity = vec3_create();
 
   return (trace, bodyA, bodyB, boxA, boxB) => {
@@ -136,7 +137,9 @@ export var sweptAABB = (() => {
       return;
     }
 
+    vec3_setScalar(time, Infinity);
     vec3_subVectors(velocity, bodyB.velocity, bodyA.velocity);
+
     var vx = velocity.x;
     var vy = velocity.y;
     var vz = velocity.z;
@@ -159,15 +162,15 @@ export var sweptAABB = (() => {
       if (d0x < 0) return;
       if (d0x > 0) t1 = Math.min(-d0x / vx, t1);
       if (d1x < 0) {
-        overlap.x = d1x / vx;
-        t0 = Math.max(overlap.x, t0);
+        time.x = d1x / vx;
+        t0 = Math.max(time.x, t0);
       }
     } else if (vx > 0) {
       if (d1x < 0) return;
       if (d1x > 0) t1 = Math.min(d1x / vx, t1);
       if (d0x < 0) {
-        overlap.x = -d0x / vx;
-        t0 = Math.max(overlap.x, t0);
+        time.x = -d0x / vx;
+        t0 = Math.max(time.x, t0);
       }
     }
 
@@ -177,15 +180,15 @@ export var sweptAABB = (() => {
       if (d0y < 0) return;
       if (d0y > 0) t1 = Math.min(-d0y / vy, t1);
       if (d1y < 0) {
-        overlap.y = d1y / vy;
-        t0 = Math.max(overlap.y, t0);
+        time.y = d1y / vy;
+        t0 = Math.max(time.y, t0);
       }
     } else if (vy > 0) {
       if (d1y < 0) return;
       if (d1y > 0) t1 = Math.min(d1y / vy, t1);
       if (d0y < 0) {
-        overlap.y = -d0y / vy;
-        t0 = Math.max(overlap.y, t0);
+        time.y = -d0y / vy;
+        t0 = Math.max(time.y, t0);
       }
     }
 
@@ -195,15 +198,15 @@ export var sweptAABB = (() => {
       if (d0z < 0) return;
       if (d0z > 0) t1 = Math.min(-d0z / vz, t1);
       if (d1z < 0) {
-        overlap.z = d1z / vz;
-        t0 = Math.max(overlap.z, t0);
+        time.z = d1z / vz;
+        t0 = Math.max(time.z, t0);
       }
     } else if (vz > 0) {
       if (d1z < 0) return;
       if (d1z > 0) t1 = Math.min(d1z / vz, t1);
       if (d0z < 0) {
-        overlap.z = -d0z / vz;
-        t0 = Math.max(overlap.z, t0);
+        time.z = -d0z / vz;
+        t0 = Math.max(time.z, t0);
       }
     }
 
@@ -211,9 +214,9 @@ export var sweptAABB = (() => {
 
     trace.fraction = t0;
 
-    if (overlap.x > overlap.y && overlap.x > overlap.z) {
+    if (time.x < time.y && time.x < time.z) {
       vec3_set(trace.normal, Math.sign(vx), 0, 0);
-    } else if (overlap.y > overlap.z) {
+    } else if (time.y < time.z) {
       vec3_set(trace.normal, 0, Math.sign(vy), 0);
     } else {
       vec3_set(trace.normal, 0, 0, Math.sign(vz));
