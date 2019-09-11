@@ -70,43 +70,38 @@ export var map0 = (gl, scene, camera) => {
   groundMesh.position.y -= 32;
   object3d_add(map, groundMesh);
 
-  // Pillars
-  [
-    [[128, 1024, 128], [256, 512, -512]],
-    [[128, 1024, 128], [-256, 512, -512]],
-    [[128, 1024, 128], [256, 512, 0]],
-    [[128, 1024, 128], [-256, 512, 0]],
-  ].map(([dimensions, position]) => {
+  var createBlock = ([dimensions, position]) => {
     var mesh = physics_add(
       mesh_create(boxGeom_create(...dimensions), material_create()),
       BODY_STATIC,
     );
-    vec3_fromArray(mesh.position, position);
+    vec3_set(mesh.position, ...position);
     object3d_add(map, mesh);
 
     var shadowMesh = shadowMesh_create(mesh);
     shadowMesh.position.y = 0.1;
     shadowMesh.light = light0;
     mesh.shadow = shadowMesh;
-    return shadowMesh;
-  });
+  };
+
+  // Pillars
+  [
+    [[128, 1024, 128], [256, 512, -512]],
+    [[128, 1024, 128], [-256, 512, -512]],
+    [[128, 1024, 128], [256, 512, 0]],
+    [[128, 1024, 128], [-256, 512, 0]],
+  ].map(createBlock);
 
   // Stairs
-  (() => {
-    var width = 96;
-    var depth = 16;
-    var height = 8;
-    var count = 10;
-    var x = 0;
-    var z = -100;
+  var createStairs = (width, height, depth, count, x, y, z, dz) => {
     for (var i = 0; i < count; i++) {
-      var y = (i + 1) * height;
+      var stepY = (i + 1) * height;
       var mesh = physics_add(
-        mesh_create(boxGeom_create(width, y, depth), material_create()),
+        mesh_create(boxGeom_create(width, stepY, depth), material_create()),
         BODY_STATIC,
       );
       get_physics_component(mesh).stairs = true;
-      vec3_set(mesh.position, x, y / 2, -i * depth + z);
+      vec3_set(mesh.position, x, y + stepY / 2, dz * i * depth + z);
       object3d_add(map, mesh);
 
       var shadowMesh = shadowMesh_create(mesh);
@@ -114,20 +109,15 @@ export var map0 = (gl, scene, camera) => {
       shadowMesh.light = light0;
       mesh.shadow = shadowMesh;
     }
-  })();
+  };
 
-  (() => {
-    var mesh = physics_add(
-      mesh_create(boxGeom_create(512, 80, 128), material_create()),
-      BODY_STATIC,
-    );
-    vec3_set(mesh.position, 0, 80 - 40, -100 + 8 - 160 - 64);
-    object3d_add(map, mesh);
-    var shadowMesh = shadowMesh_create(mesh);
-    shadowMesh.position.y = 0.1;
-    shadowMesh.light = light0;
-    mesh.shadow = shadowMesh;
-  })();
+  createStairs(96, 8, 16, 10, 0, 0, -100, -1);
+  createStairs(96, 8, 16, 10, -208, 80, -244, 1);
+
+  [
+    [[512, 80, 128], [0, 80 - 40, -100 + 8 - 160 - 64]],
+    [[96, 80, 160], [-208, 80 - 40, -172]],
+  ].map(createBlock);
 
   entity_add(
     map,
