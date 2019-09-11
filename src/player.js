@@ -94,26 +94,6 @@ export var player_update = player => {
   player_checkGround(player);
 };
 
-var player_overlapsBodies = (() => {
-  var boxA = box3_create();
-  var boxB = box3_create();
-
-  return (player, position, bodies) => {
-    box3_translate(box3_copy(boxA, player.body.boundingBox), position);
-
-    for (var i = 0; i < bodies.length; i++) {
-      var body = bodies[i];
-      box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
-
-      if (box3_overlapsBox(boxA, boxB)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-})();
-
 var trace_create = () => {
   return {
     allsolid: false,
@@ -390,7 +370,6 @@ var player_stepSlideMove = (() => {
 
     Object.assign(down, start_o);
     down.y -= STEPSIZE;
-    // pm->trace (&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
     player_trace(player, trace, start_o, down);
     Object.assign(up, vec3_Y);
     // never step up when you have up velocity
@@ -431,60 +410,10 @@ var player_stepSlideMove = (() => {
 
     var delta = player.object.position.y - start_o.y;
     if (delta > 2) {
-      window.pdy = delta;
+      window.pdy = Math.min(delta, 16);
     }
   };
 })();
-
-/*
-var player_stepSlideMove2 = (() => {
-  var start_o = vec3_create();
-  var start_v = vec3_create();
-  var up = vec3_create();
-  var down = vec3_create();
-  var position = vec3_create();
-
-  return player => {
-    var bodies = physics_bodies(player.scene).filter(
-      body => body !== player.body,
-    );
-
-    Object.assign(start_o, player.object.position);
-    Object.assign(start_v, player.body.velocity);
-
-    // we got exactly where we wanted to go first try
-    vec3_addScaledVector(start_o, start_v, player.dt);
-    if (!player_overlapsBodies(player, start_o, bodies)) {
-      return;
-    }
-
-    Object.assign(down, start_o);
-    down.y -= STEPSIZE;
-    Object.assign(up, vec3_Y);
-    // never step up when you have up velocity
-    if (
-      player.body.velocity.y > 0 &&
-      (!player_overlapsBodies(player, down, bodies) ||
-        vec3_dot(player.groundTrace.normal, up) < 0.7)
-    ) {
-      return;
-    }
-
-    Object.assign(up, start_o);
-    up.y += STEPSIZE;
-
-    if (player_overlapsBodies(player, up, bodies)) {
-      return;
-    }
-
-    // test the player position if they were a stepheight higher
-    // pm->trace (&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
-    // if (trace.allsolid) {
-    //   return;
-    // }
-  };
-})();
-*/
 
 var player_checkJump = player => {
   if (player.command.up < 10) {
@@ -554,7 +483,6 @@ var player_walkMove = (() => {
     }
 
     player_stepSlideMove(player, false);
-    // player_stepSlideMove2(player);
   };
 })();
 
@@ -601,7 +529,6 @@ var player_airMove = (() => {
     }
 
     player_stepSlideMove(player, true);
-    // player.body.velocity.y -= player.gravity * player.dt;
   };
 })();
 
