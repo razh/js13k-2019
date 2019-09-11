@@ -1,10 +1,18 @@
+/* global c */
+
 import { boxGeom_create } from './boxGeom.js';
+import { bullet_create } from './bullet.js';
 import { light_create } from './directionalLight.js';
 import { component_create, entity_add } from './entity.js';
 import { keys_create } from './keys.js';
 import { material_create } from './material.js';
 import { mesh_create } from './mesh.js';
-import { object3d_add, object3d_create } from './object3d.js';
+import {
+  object3d_add,
+  object3d_create,
+  object3d_translateX,
+  object3d_translateZ,
+} from './object3d.js';
 import {
   BODY_DYNAMIC,
   BODY_STATIC,
@@ -16,12 +24,14 @@ import {
 import { player_create, player_update } from './player.js';
 import { shadowMesh_create } from './shadowMesh.js';
 import {
+  vec3_add,
   vec3_applyQuaternion,
   vec3_create,
   vec3_cross,
   vec3_fromArray,
   vec3_normalize,
   vec3_set,
+  vec3_setLength,
 } from './vec3.js';
 
 export var map0 = (gl, scene, camera) => {
@@ -120,6 +130,27 @@ export var map0 = (gl, scene, camera) => {
     [[512, 80, 128], [0, 80 - 40, -100 + 8 - 160 - 64]],
     [[96, 80, 160], [-208, 80 - 40, -172]],
   ].map(createBlock);
+
+  var bulletCount = 0;
+  c.addEventListener('click', () => {
+    var bullet = bullet_create();
+    Object.assign(bullet.position, playerMesh.position);
+    Object.assign(bullet.quaternion, camera.quaternion);
+    vec3_add(
+      vec3_setLength(
+        vec3_applyQuaternion(
+          vec3_set(get_physics_component(bullet).velocity, 0, 0, -1),
+          camera.quaternion,
+        ),
+        800,
+      ),
+      playerPhysics.velocity,
+    );
+    object3d_translateX(bullet, bulletCount % 2 ? -12 : 12);
+    object3d_translateZ(bullet, -20);
+    object3d_add(map, bullet);
+    bulletCount = (bulletCount + 1) % 2;
+  });
 
   entity_add(
     map,
