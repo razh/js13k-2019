@@ -18,7 +18,6 @@ import {
   vec3_add,
   vec3_addScaledVector,
   vec3_create,
-  vec3_length,
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_set,
@@ -60,50 +59,54 @@ export var physics_bodies = object => {
   return bodies;
 };
 
+var calculatePenetration = (penetration, bodyA, bodyB, boxA, boxB) => {
+  // Determine overlap.
+  // d0 is negative side or 'left' side.
+  // d1 is positive or 'right' side.
+  var d0x = boxB.max.x - boxA.min.x;
+  var d1x = boxA.max.x - boxB.min.x;
+
+  var d0y = boxB.max.y - boxA.min.y;
+  var d1y = boxA.max.y - boxB.min.y;
+
+  var d0z = boxB.max.z - boxA.min.z;
+  var d1z = boxA.max.z - boxB.min.z;
+
+  // Only overlapping on an axis if both ranges intersect.
+  var dx = 0;
+  if (d0x > 0 && d1x > 0) {
+    dx = d0x < d1x ? d0x : -d1x;
+  }
+
+  var dy = 0;
+  if (d0y > 0 && d1y > 0) {
+    dy = d0y < d1y ? d0y : -d1y;
+  }
+
+  var dz = 0;
+  if (d0z > 0 && d1z > 0) {
+    dz = d0z < d1z ? d0z : -d1z;
+  }
+
+  // Determine minimum axis of separation.
+  var adx = Math.abs(dx);
+  var ady = Math.abs(dy);
+  var adz = Math.abs(dz);
+
+  if (adx < ady && adx < adz) {
+    vec3_set(penetration, dx, 0, 0);
+  } else if (ady < adz) {
+    vec3_set(penetration, 0, dy, 0);
+  } else {
+    vec3_set(penetration, 0, 0, dz);
+  }
+};
+
 var narrowPhase = (() => {
   var penetration = vec3_create();
 
   return (bodyA, bodyB, boxA, boxB) => {
-    // Determine overlap.
-    // d0 is negative side or 'left' side.
-    // d1 is positive or 'right' side.
-    var d0x = boxB.max.x - boxA.min.x;
-    var d1x = boxA.max.x - boxB.min.x;
-
-    var d0y = boxB.max.y - boxA.min.y;
-    var d1y = boxA.max.y - boxB.min.y;
-
-    var d0z = boxB.max.z - boxA.min.z;
-    var d1z = boxA.max.z - boxB.min.z;
-
-    // Only overlapping on an axis if both ranges intersect.
-    var dx = 0;
-    if (d0x > 0 && d1x > 0) {
-      dx = d0x < d1x ? d0x : -d1x;
-    }
-
-    var dy = 0;
-    if (d0y > 0 && d1y > 0) {
-      dy = d0y < d1y ? d0y : -d1y;
-    }
-
-    var dz = 0;
-    if (d0z > 0 && d1z > 0) {
-      dz = d0z < d1z ? d0z : -d1z;
-    }
-
-    // Determine minimum axis of separation.
-    var adx = Math.abs(dx);
-    var ady = Math.abs(dy);
-    var adz = Math.abs(dz);
-
-    if (adx < ady && adx < adz) {
-      vec3_set(penetration, dx, 0, 0);
-    } else if (ady < adz) {
-      vec3_set(penetration, 0, dy, 0);
-    } else {
-      vec3_set(penetration, 0, 0, dz);
-    }
+    calculatePenetration(penetration, bodyA, bodyB, boxA, boxB);
 
     var objectA = bodyA.parent;
     var objectB = bodyB.parent;
@@ -119,18 +122,21 @@ var narrowPhase = (() => {
       vec3_add(objectA.position, penetration);
       vec3_sub(objectB.position, penetration);
     }
-
-    // Return distance traveled.
-    return vec3_length(penetration);
   };
 })();
 
 export var sweptAABB = (() => {
+  var overlap = vec3_create();
   var velocity = vec3_create();
 
-  return (bodyA, bodyB, boxA, boxB) => {
+  return (trace, bodyA, bodyB, boxA, boxB) => {
     if (box3_overlapsBox(boxA, boxB)) {
-      return 0;
+      trace.allsolid = true;
+      trace.fraction = 0;
+      Object.assign(trace.endpos, bodyA.parent.position);
+      calculatePenetration(trace.normal, bodyA, bodyB, boxA, boxB);
+      vec3_normalize(trace.normal);
+      return;
     }
 
     vec3_subVectors(velocity, bodyB.velocity, bodyA.velocity);
@@ -155,11 +161,17 @@ export var sweptAABB = (() => {
     if (vx < 0) {
       if (d0x < 0) return;
       if (d0x > 0) t1 = Math.min(-d0x / vx, t1);
-      if (d1x < 0) t0 = Math.max(d1x / vx, t0);
+      if (d1x < 0) {
+        overlap.x = d1x;
+        t0 = Math.max(overlap.x / vx, t0);
+      }
     } else if (vx > 0) {
       if (d1x < 0) return;
       if (d1x > 0) t1 = Math.min(d1x / vx, t1);
-      if (d0x < 0) t0 = Math.max(-d0x / vx, t0);
+      if (d0x < 0) {
+        overlap.x = -d0x;
+        t0 = Math.max(overlap.x / vx, t0);
+      }
     }
 
     if (t0 > t1) return;
@@ -167,11 +179,17 @@ export var sweptAABB = (() => {
     if (vy < 0) {
       if (d0y < 0) return;
       if (d0y > 0) t1 = Math.min(-d0y / vy, t1);
-      if (d1y < 0) t0 = Math.max(d1y / vy, t0);
+      if (d1y < 0) {
+        overlap.y = d1y;
+        t0 = Math.max(overlap.y / vy, t0);
+      }
     } else if (vy > 0) {
       if (d1y < 0) return;
       if (d1y > 0) t1 = Math.min(d1y / vy, t1);
-      if (d0y < 0) t0 = Math.max(-d0y / vy, t0);
+      if (d0y < 0) {
+        overlap.y = -d0y;
+        t0 = Math.max(overlap.y / vy, t0);
+      }
     }
 
     if (t0 > t1) return;
@@ -179,16 +197,30 @@ export var sweptAABB = (() => {
     if (vz < 0) {
       if (d0z < 0) return;
       if (d0z > 0) t1 = Math.min(-d0z / vz, t1);
-      if (d1z < 0) t0 = Math.max(d1z / vz, t0);
+      if (d1z < 0) {
+        overlap.z = d1z;
+        t0 = Math.max(overlap.z / vz, t0);
+      }
     } else if (vz > 0) {
       if (d1z < 0) return;
       if (d1z > 0) t1 = Math.min(d1z / vz, t1);
-      if (d0z < 0) t0 = Math.max(-d0z / vz, t0);
+      if (d0z < 0) {
+        overlap.z = -d0z;
+        t0 = Math.max(overlap.z / vz, t0);
+      }
     }
 
     if (t0 > t1) return;
 
-    return t0;
+    trace.fraction = t0;
+
+    if (overlap.x > overlap.y && overlap.x > overlap.z) {
+      vec3_set(trace.normal, Math.sign(vx), 0, 0);
+    } else if (overlap.y > overlap.z) {
+      vec3_set(trace.normal, 0, Math.sign(vy), 0);
+    } else {
+      vec3_set(trace.normal, 0, 0, Math.sign(vz));
+    }
   };
 })();
 

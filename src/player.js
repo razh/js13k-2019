@@ -9,10 +9,13 @@ import { physics_bodies, sweptAABB } from './physics.js';
 import {
   OVERCLIP,
   pm_clipVelocity,
+  vec3_add,
   vec3_addScaledVector,
   vec3_create,
+  vec3_crossVectors,
   vec3_dot,
   vec3_length,
+  vec3_lerpVectors,
   vec3_multiplyScalar,
   vec3_normalize,
   vec3_setScalar,
@@ -111,6 +114,32 @@ var player_overlapsBodies = (() => {
   };
 })();
 
+var trace_create = () => {
+  return {
+    allsolid: false,
+    fraction: 1,
+    endpos: vec3_create(),
+    normal: vec3_create(),
+  };
+};
+
+var trace_copy = (a, b) => {
+  a.allsolid = b.allsolid;
+  a.fraction = b.fraction;
+  Object.assign(a.endpos, b.endpos);
+  Object.assign(a.normal, b.normal);
+  return a;
+};
+
+var trace_reset = (() => {
+  var _trace = trace_create();
+
+  return trace => {
+    trace_copy(trace, _trace);
+    return trace;
+  };
+})();
+
 var player_trace = (() => {
   var boxA = box3_create();
   var boxB = box3_create();
@@ -118,8 +147,11 @@ var player_trace = (() => {
 
   var originalVelocity = vec3_create();
   var velocity = vec3_create();
+  var _trace = trace_create();
 
-  return (player, start, end) => {
+  return (player, trace, start, end) => {
+    trace_reset(trace);
+
     var bodies = physics_bodies(player.scene).filter(
       body => body !== player.body,
     );
@@ -134,8 +166,6 @@ var player_trace = (() => {
     box3_expandByPoint(sweptBoxA, boxA.min);
     box3_expandByPoint(sweptBoxA, boxA.max);
 
-    var min = 1;
-    var t;
     for (var i = 0; i < bodies.length; i++) {
       var body = bodies[i];
       box3_translate(box3_copy(boxB, body.boundingBox), body.parent.position);
@@ -143,23 +173,201 @@ var player_trace = (() => {
         continue;
       }
 
-      t = sweptAABB(player.body, body, boxA, boxB);
-      if (t !== undefined) {
-        min = Math.min(t, min);
+      sweptAABB(trace_reset(_trace), player.body, body, boxA, boxB);
+      if (_trace.fraction < trace.fraction) {
+        trace_copy(trace, _trace);
       }
     }
 
     Object.assign(player.body.velocity, originalVelocity);
-
-    return min;
+    vec3_lerpVectors(trace.endpos, start, end, trace.fraction);
   };
 })();
 
+var MAX_CLIP_PLANES = 5;
+
 var player_slideMove = (() => {
+  var dir = vec3_create();
+  var numplanes;
+  var planes = [...Array(MAX_CLIP_PLANES)].map(() => vec3_create());
+  var clipVelocity = vec3_create();
+  var trace = trace_create();
+  var end = vec3_create();
+  var endVelocity = vec3_create();
+  var endClipVelocity = vec3_create();
+
   return (player, gravity) => {
     if (gravity) {
-      player.body.velocity.y -= player.gravity * player.dt;
+      Object.assign(endVelocity, player.body.velocity);
+      endVelocity.y -= player.gravity * player.dt;
+      player.body.velocity.y = (player.body.velocity.y + endVelocity.y) * 0.5;
+      if (player.groundPlane) {
+        // slide along the ground plane
+        pm_clipVelocity(
+          player.body.velocity,
+          player.groundTrace.normal,
+          OVERCLIP,
+        );
+      }
     }
+
+    var time_left = player.dt;
+
+    // never turn against the ground plane
+    if (player.groundPlane) {
+      numplanes = 1;
+      Object.assign(planes[0], player.groundTrace.normal);
+    } else {
+      numplanes = 0;
+    }
+
+    // never turn against original velocity
+    Object.assign(planes[numplanes], player.body.velocity);
+    vec3_normalize(planes[numplanes]);
+    numplanes++;
+
+    var bumpcount;
+    var numbumps = 4;
+    for (bumpcount = 0; bumpcount < numbumps; bumpcount++) {
+      // calculate position we are trying to move to
+      Object.assign(end, player.object.position);
+      vec3_addScaledVector(end, player.body.velocity, time_left);
+
+      // see if we can make it there
+      player_trace(player, trace, player.object.position, end);
+
+      if (trace.allsolid) {
+        return true;
+      }
+
+      if (trace.fraction > 0) {
+        // actually covered some distance
+        Object.assign(player.object.position, trace.endpos);
+      }
+
+      if (trace.fraction === 1) {
+        // moved the entire distance
+        break;
+      }
+
+      time_left -= time_left * trace.fraction;
+
+      if (numplanes >= MAX_CLIP_PLANES) {
+        // this shouldn't really happen
+        vec3_setScalar(player.body.velocity, 0);
+        return true;
+      }
+
+      var i;
+      //
+      // if this is the same plane we hit before, nudge velocity
+      // out along it, which fixes some epsilon issues with
+      // non-axial planes
+      //
+      for (i = 0; i < numplanes; i++) {
+        if (vec3_dot(trace.normal, planes[i]) > 0.99) {
+          vec3_add(player.body.velocity, trace.normal);
+          break;
+        }
+      }
+      if (i < numplanes) {
+        continue;
+      }
+      Object.assign(planes[numplanes], trace.normal);
+      numplanes++;
+
+      //
+      //  modify velocity so that it parallels all of the clip planes
+      //
+
+      // find a plane that it enters
+      for (i = 0; i < numplanes; i++) {
+        var into = vec3_dot(player.body.velocity, planes[i]);
+        if (into >= 0.1) {
+          // move doesn't interact with the plane
+          continue;
+        }
+
+        // slide along the plane
+        Object.assign(clipVelocity, player.body.velocity);
+        pm_clipVelocity(clipVelocity, planes[i], OVERCLIP);
+
+        if (gravity) {
+          // slide along the plane
+          Object.assign(endClipVelocity, endVelocity);
+          pm_clipVelocity(endClipVelocity, planes[i], OVERCLIP);
+        }
+
+        // see if there is a second plane that the new move enters
+        for (var j = 0; j < numplanes; j++) {
+          if (j === i) {
+            continue;
+          }
+
+          if (vec3_dot(clipVelocity, planes[j]) >= 0.1) {
+            // move doesn't interact with the plane
+            continue;
+          }
+
+          // try clipping the move to the plane
+          pm_clipVelocity(clipVelocity, planes[j], OVERCLIP);
+
+          if (gravity) {
+            pm_clipVelocity(endClipVelocity, planes[j], OVERCLIP);
+          }
+
+          // see if it goes back into the first clip plane
+          if (vec3_dot(clipVelocity, planes[i]) >= 0) {
+            continue;
+          }
+
+          // slide the original velocity along the crease
+          vec3_crossVectors(dir, planes[i], planes[j]);
+          vec3_normalize(dir);
+          var d = vec3_dot(dir, player.body.velocity);
+          Object.assign(clipVelocity, dir);
+          vec3_multiplyScalar(clipVelocity, d);
+
+          if (gravity) {
+            d = vec3_dot(dir, endVelocity);
+            Object.assign(endClipVelocity, dir);
+            vec3_multiplyScalar(endClipVelocity, d);
+          }
+
+          // see if there is a third plane that the new move enters
+
+          for (var k = 0; k < numplanes; k++) {
+            if (k === i || k === j) {
+              continue;
+            }
+
+            if (vec3_dot(clipVelocity, planes[k]) >= 0.1) {
+              // move doesn't interact with the plane
+              continue;
+            }
+
+            // stop dead at a triple plane intersection
+            vec3_setScalar(player.body.velocity, 0);
+            return true;
+          }
+        }
+
+        // if we have fixed all interactions, try another move
+        Object.assign(player.body.velocity, clipVelocity);
+
+        if (gravity) {
+          Object.assign(endClipVelocity, endVelocity);
+        }
+
+        break;
+      }
+    }
+
+    if (gravity) {
+      Object.assign(player.body.velocity, endVelocity);
+    }
+
+    return bumpcount !== 0;
   };
 })();
 
@@ -168,25 +376,21 @@ var player_stepSlideMove = (() => {
   var start_v = vec3_create();
   var up = vec3_create();
   var down = vec3_create();
-  var position = vec3_create();
+  var trace = trace_create();
 
-  return player => {
-    var bodies = physics_bodies(player.scene).filter(
-      body => body !== player.body,
-    );
-
+  return (player, gravity) => {
     Object.assign(start_o, player.object.position);
     Object.assign(start_v, player.body.velocity);
 
     // we got exactly where we wanted to go first try
-    vec3_addScaledVector(start_o, start_v, player.dt);
-    if (!player_overlapsBodies(player, start_o, bodies)) {
+    if (player_slideMove(player, gravity) === 0) {
       return;
     }
 
     Object.assign(down, start_o);
     down.y -= STEPSIZE;
     // pm->trace (&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
+    player_trace(player, trace, start_o, down);
     Object.assign(up, vec3_Y);
     // never step up when you have up velocity
     if (
@@ -200,13 +404,38 @@ var player_stepSlideMove = (() => {
     up.y += STEPSIZE;
 
     // test the player position if they were a stepheight higher
-    // pm->trace (&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
+    player_trace(player, trace, start_o, up);
     if (trace.allsolid) {
+      // can't step up
       return;
+    }
+
+    var stepSize = trace.endpos.y - start_o.y;
+    // try slidemove from this position
+    Object.assign(player.object.position, trace.endpos);
+    Object.assign(player.body.velocity, start_v);
+
+    player_slideMove(player, gravity);
+
+    // push down the final amount
+    Object.assign(down, player.object.position);
+    down.y -= stepSize;
+    player_trace(player, trace, player.object.position, down);
+    if (!trace.allsolid) {
+      Object.assign(player.object.position, trace.endpos);
+    }
+    if (trace.fraction < 1) {
+      pm_clipVelocity(player.body.velocity, trace.normal, OVERCLIP);
+    }
+
+    var delta = player.object.position.y - start_o.y;
+    if (delta > 2) {
+      window.pdy = delta;
     }
   };
 })();
 
+/*
 var player_stepSlideMove2 = (() => {
   var start_o = vec3_create();
   var start_v = vec3_create();
@@ -254,6 +483,7 @@ var player_stepSlideMove2 = (() => {
     // }
   };
 })();
+*/
 
 var player_checkJump = player => {
   if (player.command.up < 10) {
@@ -314,6 +544,7 @@ var player_walkMove = (() => {
 
     player_accelerate(player, wishdir, wishspeed, pm_accelerate);
 
+    // slide along the ground plane
     pm_clipVelocity(player.body.velocity, player.groundTrace.normal, OVERCLIP);
 
     // don't do anything if standing still
@@ -321,7 +552,7 @@ var player_walkMove = (() => {
       return;
     }
 
-    player_slideMove(player, false);
+    player_stepSlideMove(player, false);
     // player_stepSlideMove2(player);
   };
 })();
@@ -368,7 +599,7 @@ var player_airMove = (() => {
       );
     }
 
-      player_slideMove(player, true);
+    player_stepSlideMove(player, true);
     // player.body.velocity.y -= player.gravity * player.dt;
   };
 })();
@@ -450,13 +681,15 @@ var player_accelerate = (player, wishdir, wishspeed, accel) => {
 
 var player_checkGround = (() => {
   var position = vec3_create();
+  var trace = trace_create();
 
   return player => {
     Object.assign(position, player.object.position);
     position.y -= 0.25;
 
+    player_trace(player, trace, player.object.position, position);
     // if the trace didn't hit anything, we are in free fall
-    if (player_trace(player, player.object.position, position) === 1) {
+    if (trace.fraction === 1) {
       player.groundPlane = false;
       player.walking = false;
       return;
