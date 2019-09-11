@@ -60,54 +60,50 @@ export var physics_bodies = object => {
   return bodies;
 };
 
-var calculatePenetration = (penetration, bodyA, bodyB, boxA, boxB) => {
-  // Determine overlap.
-  // d0 is negative side or 'left' side.
-  // d1 is positive or 'right' side.
-  var d0x = boxB.max.x - boxA.min.x;
-  var d1x = boxA.max.x - boxB.min.x;
-
-  var d0y = boxB.max.y - boxA.min.y;
-  var d1y = boxA.max.y - boxB.min.y;
-
-  var d0z = boxB.max.z - boxA.min.z;
-  var d1z = boxA.max.z - boxB.min.z;
-
-  // Only overlapping on an axis if both ranges intersect.
-  var dx = 0;
-  if (d0x > 0 && d1x > 0) {
-    dx = d0x < d1x ? d0x : -d1x;
-  }
-
-  var dy = 0;
-  if (d0y > 0 && d1y > 0) {
-    dy = d0y < d1y ? d0y : -d1y;
-  }
-
-  var dz = 0;
-  if (d0z > 0 && d1z > 0) {
-    dz = d0z < d1z ? d0z : -d1z;
-  }
-
-  // Determine minimum axis of separation.
-  var adx = Math.abs(dx);
-  var ady = Math.abs(dy);
-  var adz = Math.abs(dz);
-
-  if (adx < ady && adx < adz) {
-    vec3_set(penetration, dx, 0, 0);
-  } else if (ady < adz) {
-    vec3_set(penetration, 0, dy, 0);
-  } else {
-    vec3_set(penetration, 0, 0, dz);
-  }
-};
-
 var narrowPhase = (() => {
   var penetration = vec3_create();
 
   return (bodyA, bodyB, boxA, boxB) => {
-    calculatePenetration(penetration, bodyA, bodyB, boxA, boxB);
+    // Determine overlap.
+    // d0 is negative side or 'left' side.
+    // d1 is positive or 'right' side.
+    var d0x = boxB.max.x - boxA.min.x;
+    var d1x = boxA.max.x - boxB.min.x;
+
+    var d0y = boxB.max.y - boxA.min.y;
+    var d1y = boxA.max.y - boxB.min.y;
+
+    var d0z = boxB.max.z - boxA.min.z;
+    var d1z = boxA.max.z - boxB.min.z;
+
+    // Only overlapping on an axis if both ranges intersect.
+    var dx = 0;
+    if (d0x > 0 && d1x > 0) {
+      dx = d0x < d1x ? d0x : -d1x;
+    }
+
+    var dy = 0;
+    if (d0y > 0 && d1y > 0) {
+      dy = d0y < d1y ? d0y : -d1y;
+    }
+
+    var dz = 0;
+    if (d0z > 0 && d1z > 0) {
+      dz = d0z < d1z ? d0z : -d1z;
+    }
+
+    // Determine minimum axis of separation.
+    var adx = Math.abs(dx);
+    var ady = Math.abs(dy);
+    var adz = Math.abs(dz);
+
+    if (adx < ady && adx < adz) {
+      vec3_set(penetration, dx, 0, 0);
+    } else if (ady < adz) {
+      vec3_set(penetration, 0, dy, 0);
+    } else {
+      vec3_set(penetration, 0, 0, dz);
+    }
 
     var objectA = bodyA.parent;
     var objectB = bodyB.parent;
