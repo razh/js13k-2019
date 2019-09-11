@@ -35,7 +35,7 @@ export var physics_create = (entity, physics) => {
     boundingBox: box3_setFromObject(box3_create(), entity),
     velocity: vec3_create(),
     update(component, dt) {
-      // vec3_addScaledVector(component.parent.position, component.velocity, dt);
+      vec3_addScaledVector(component.parent.position, component.velocity, dt);
     },
   });
 };
@@ -249,7 +249,7 @@ export var physics_update = (() => {
         physics_setBoxFromBody(boxB, bodyB);
 
         if (box3_overlapsBox(boxA, boxB)) {
-          // narrowPhase(bodyA, bodyB, boxA, boxB);
+          narrowPhase(bodyA, bodyB, boxA, boxB);
         }
       }
     }
