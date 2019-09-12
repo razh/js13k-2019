@@ -28,6 +28,7 @@ import {
 
 export var BODY_STATIC = 1;
 export var BODY_DYNAMIC = 2;
+export var BODY_BULLET = 4;
 
 export var physics_create = (entity, physics) => {
   return component_create({
@@ -36,6 +37,9 @@ export var physics_create = (entity, physics) => {
     velocity: vec3_create(),
     update(component, dt) {
       vec3_addScaledVector(component.parent.position, component.velocity, dt);
+    },
+    collision: {
+      normal: undefined,
     },
   });
 };
@@ -238,6 +242,11 @@ export var physics_update = (() => {
         // Immovable objects.
         if (bodyA.physics === BODY_STATIC && bodyB.physics === BODY_STATIC) {
           return;
+        }
+
+        // Projectiles don't collide.
+        if (bodyA.physics === BODY_BULLET && bodyB.physics === BODY_BULLET) {
+          continue;
         }
 
         // Two dynamic bodies, or one static and one dynamic body.

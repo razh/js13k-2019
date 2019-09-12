@@ -1,18 +1,12 @@
 /* global c */
 
 import { boxGeom_create } from './boxGeom.js';
-import { bullet_create } from './bullet.js';
 import { light_create } from './directionalLight.js';
 import { component_create, entity_add } from './entity.js';
 import { keys_create } from './keys.js';
 import { material_create } from './material.js';
 import { mesh_create } from './mesh.js';
-import {
-  object3d_add,
-  object3d_create,
-  object3d_translateX,
-  object3d_translateZ,
-} from './object3d.js';
+import { object3d_add, object3d_create } from './object3d.js';
 import {
   BODY_DYNAMIC,
   BODY_STATIC,
@@ -22,16 +16,16 @@ import {
   physics_update,
 } from './physics.js';
 import { player_create, player_update } from './player.js';
+import { ray_create, ray_intersectObjects } from './ray.js';
 import { shadowMesh_create } from './shadowMesh.js';
+import { turret_create } from './turret.js';
 import {
-  vec3_add,
   vec3_applyQuaternion,
   vec3_create,
   vec3_cross,
   vec3_fromArray,
   vec3_normalize,
   vec3_set,
-  vec3_setLength,
 } from './vec3.js';
 
 export var map0 = (gl, scene, camera) => {
@@ -82,18 +76,21 @@ export var map0 = (gl, scene, camera) => {
   groundMesh.position.y -= 32;
   object3d_add(map, groundMesh);
 
+  var createShadow = mesh => {
+    var shadowMesh = shadowMesh_create(mesh);
+    shadowMesh.position.y = 0.1;
+    shadowMesh.light = light0;
+    mesh.shadow = shadowMesh;
+  };
+
   var createBlock = ([dimensions, position]) => {
     var mesh = physics_add(
       mesh_create(boxGeom_create(...dimensions), material_create()),
       BODY_STATIC,
     );
     vec3_set(mesh.position, ...position);
+    createShadow(mesh);
     object3d_add(map, mesh);
-
-    var shadowMesh = shadowMesh_create(mesh);
-    shadowMesh.position.y = 0.1;
-    shadowMesh.light = light0;
-    mesh.shadow = shadowMesh;
   };
 
   // Pillars
@@ -105,51 +102,50 @@ export var map0 = (gl, scene, camera) => {
   ].map(createBlock);
 
   // Stairs
-  var createStairs = (width, height, depth, count, x, y, z, dz) => {
+  var createStairs = ([width, height, depth], [x, y, z], count, dz) => {
     for (var i = 0; i < count; i++) {
       var stepY = (i + 1) * height;
       var mesh = physics_add(
         mesh_create(boxGeom_create(width, stepY, depth), material_create()),
         BODY_STATIC,
       );
-      get_physics_component(mesh).stairs = true;
       vec3_set(mesh.position, x, y + stepY / 2, dz * i * depth + z);
+      createShadow(mesh);
       object3d_add(map, mesh);
-
-      var shadowMesh = shadowMesh_create(mesh);
-      shadowMesh.position.y = 0.1;
-      shadowMesh.light = light0;
-      mesh.shadow = shadowMesh;
     }
   };
 
-  createStairs(96, 8, 16, 10, 0, 0, -100, -1);
-  createStairs(96, 8, 16, 10, -208, 80, -244, 1);
+  createStairs([96, 8, 16], [0, 0, -100], 10, -1);
+  createStairs([96, 8, 16], [-208, 80, -244], 10, 1);
 
   [
     [[512, 80, 128], [0, 80 - 40, -100 + 8 - 160 - 64]],
     [[96, 80, 160], [-208, 80 - 40, -172]],
   ].map(createBlock);
 
-  var bulletCount = 0;
+  var turret = turret_create(player);
+  turret.position.z -= 50;
+  createShadow(turret);
+  object3d_add(map, turret);
+
+  var turret2 = turret_create(player);
+  vec3_set(turret2.position, 160, 80, -320);
+  createShadow(turret2);
+  object3d_add(map, turret2);
+
   c.addEventListener('click', () => {
-    var bullet = bullet_create();
-    Object.assign(bullet.position, playerMesh.position);
-    Object.assign(bullet.quaternion, camera.quaternion);
-    vec3_add(
-      vec3_setLength(
-        vec3_applyQuaternion(
-          vec3_set(get_physics_component(bullet).velocity, 0, 0, -1),
-          camera.quaternion,
-        ),
-        800,
-      ),
-      playerPhysics.velocity,
+    var bodies = physics_bodies(map).filter(body => body !== player.body);
+    var ray = ray_create();
+    Object.assign(ray.origin, playerMesh.position);
+    vec3_set(ray.direction, 0, 0, -1);
+    vec3_applyQuaternion(ray.direction, camera.quaternion);
+    var intersections = ray_intersectObjects(
+      ray,
+      bodies.map(body => body.parent).filter(object => object !== playerMesh),
     );
-    object3d_translateX(bullet, bulletCount % 2 ? -12 : 12);
-    object3d_translateZ(bullet, -20);
-    object3d_add(map, bullet);
-    bulletCount = (bulletCount + 1) % 2;
+    if (intersections.length) {
+      console.log(intersections[0].point);
+    }
   });
 
   entity_add(
