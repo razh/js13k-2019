@@ -42,11 +42,32 @@
       user-select: none;
       animation: f 4s forwards;
     }
+
+    /* Health */
+    .h {
+      position: absolute;
+      width: 1rem;
+      height: 50vh;
+      top: 50%;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(-50%);
+      border: 0.2rem solid #fff;
+      opacity: 0.8;
+    }
+
+    /* Health bar */
+    .b {
+      margin-top: auto;
+      background: #fff;
+    }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
   <div class="t">Backblast</div>
+  <div class="h"><div class="b"></div></div>
   <script type="module" src="./src/index.js"></script>
 </body>
 </html>
