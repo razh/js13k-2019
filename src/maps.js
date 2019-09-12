@@ -17,6 +17,7 @@ import {
 } from './physics.js';
 import { player_create, player_update } from './player.js';
 import { ray_create, ray_intersectObjects } from './ray.js';
+import { reflector_create } from './reflector.js';
 import { shadowMesh_create } from './shadowMesh.js';
 import { turret_create } from './turret.js';
 import {
@@ -132,6 +133,10 @@ export var map0 = (gl, scene, camera) => {
   vec3_set(turret2.position, 160, 80, -320);
   createShadow(turret2);
   object3d_add(map, turret2);
+
+  var reflector = reflector_create();
+  vec3_set(reflector.position, 0, 64, -128);
+  object3d_add(map, reflector);
 
   c.addEventListener('click', () => {
     var bodies = physics_bodies(map).filter(body => body !== player.body);

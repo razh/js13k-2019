@@ -5,7 +5,12 @@ import { material_create } from './material.js';
 import { mesh_create } from './mesh.js';
 import { BODY_STATIC, physics_add } from './physics.js';
 import { compose } from './utils.js';
-import { vec3_setScalar } from './vec3.js';
+import {
+  vec3_applyQuaternion,
+  vec3_create,
+  vec3_setScalar,
+  vec3_Z,
+} from './vec3.js';
 
 export var reflector_create = () => {
   var size = 48;
@@ -27,6 +32,14 @@ export var reflector_create = () => {
   var reflector = physics_add(
     mesh_create(boxGeom_create(size, size, physicalDepth), material),
     BODY_STATIC,
+  );
+
+  reflector.reflector = true;
+  reflector.normal = vec3_create();
+
+  vec3_applyQuaternion(
+    Object.assign(reflector.normal, vec3_Z),
+    reflector.quaternion,
   );
 
   reflector.geometry = compose(
@@ -73,3 +86,5 @@ export var reflector_create = () => {
 
   return reflector;
 };
+
+export var is_reflector = object => object.reflector;

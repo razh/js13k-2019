@@ -1,4 +1,5 @@
 import {
+  box3_containsPoint,
   box3_copy,
   box3_create,
   box3_overlapsBox,
@@ -38,9 +39,8 @@ export var physics_create = (entity, physics) => {
     update(component, dt) {
       vec3_addScaledVector(component.parent.position, component.velocity, dt);
     },
-    collision: {
-      normal: undefined,
-    },
+    shouldCollide() {},
+    collide() {},
   });
 };
 
@@ -229,6 +229,7 @@ var physics_setBoxFromBody = (box, body) => {
 };
 
 export var physics_update = (() => {
+  var box = box3_create();
   var boxA = box3_create();
   var boxB = box3_create();
 
@@ -241,7 +242,7 @@ export var physics_update = (() => {
 
         // Immovable objects.
         if (bodyA.physics === BODY_STATIC && bodyB.physics === BODY_STATIC) {
-          return;
+          continue;
         }
 
         // Projectiles don't collide.
@@ -249,11 +250,40 @@ export var physics_update = (() => {
           continue;
         }
 
+        // One projectile.
+        var bullet;
+        var body;
+
+        if (bodyA.physics === BODY_BULLET || bodyB.physics === BODY_BULLET) {
+          if (bodyA.physics === BODY_BULLET) {
+            bullet = bodyA;
+            body = bodyB;
+          } else {
+            bullet = bodyB;
+            body = bodyA;
+          }
+
+          physics_setBoxFromBody(box, body);
+          if (box3_containsPoint(box, bullet.parent.position)) {
+            if (bullet.collide(body.parent) === false) {
+              continue;
+            }
+          }
+        }
+
         // Two dynamic bodies, or one static and one dynamic body.
         physics_setBoxFromBody(boxA, bodyA);
         physics_setBoxFromBody(boxB, bodyB);
 
         if (box3_overlapsBox(boxA, boxB)) {
+          // Handle case when bullet box overlaps, but not the point.
+          if (
+            bodyA.collide(bodyB.parent) === false ||
+            bodyB.collide(bodyA.parent) === false
+          ) {
+            continue;
+          }
+
           narrowPhase(bodyA, bodyB, boxA, boxB);
         }
       }

@@ -18,6 +18,7 @@ import {
   physics_bodies,
 } from './physics.js';
 import { ray_create, ray_intersectObjects } from './ray.js';
+import { is_reflector } from './reflector.js';
 import { compose } from './utils.js';
 import {
   vec3_applyQuaternion,
@@ -50,6 +51,7 @@ export var turret_create = player => {
           .filter(
             body =>
               body.parent !== turret &&
+              !is_reflector(body.parent) &&
               (body === player.body || body.physics === BODY_STATIC),
           )
           .map(body => body.parent),
@@ -59,7 +61,7 @@ export var turret_create = player => {
         return;
       }
 
-      var bullet = bullet_create();
+      var bullet = bullet_create(turret);
       Object.assign(bullet.position, turret.position);
       bullet.position.y += bulletY;
       object3d_lookAt(bullet, player.object.position);
@@ -72,9 +74,9 @@ export var turret_create = player => {
       );
       object3d_translateX(
         bullet,
-        (bulletCount % 2 ? -1 : 1) * (turretSize / 2 + 1),
+        (bulletCount % 2 ? -1 : 1) * (turretSize / 2),
       );
-      object3d_translateZ(bullet, -Math.SQRT2 * turretSize + 1);
+      object3d_translateZ(bullet, -Math.SQRT2 * turretSize);
       object3d_add(player.scene, bullet);
       bulletCount = (bulletCount + 1) % 2;
     }),
