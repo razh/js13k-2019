@@ -410,7 +410,7 @@ var player_stepSlideMove = (() => {
 
     var delta = player.object.position.y - start_o.y;
     if (delta > 2) {
-      window.pdy = Math.min(delta, 16);
+      player.dy = Math.min(delta, 16);
     }
   };
 })();

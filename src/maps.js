@@ -186,33 +186,29 @@ export var map0 = (gl, scene, camera) => {
 
         player_update(player);
         player.time = performance.now();
-        // if (!player.stepTime) {
-        //   player.stepTime = player.time;
-        // }
-        // console.log(player.time);
+
+        // CG_EntityEvent
         var STEP_TIME = 200;
-        if (window.pdy) {
+        if (player.dy) {
           var oldStep;
           var MAX_STEP_CHANGE = 32;
           // check for stepping up before a previous step is complete
           var delta = player.time - player.stepTime;
-          // console.log(delta);
           if (delta < STEP_TIME) {
             oldStep = (player.stepChange * (STEP_TIME - delta)) / STEP_TIME;
           } else {
             oldStep = 0;
           }
           // add this amount
-          player.stepChange = Math.min(oldStep + window.pdy, MAX_STEP_CHANGE);
+          player.stepChange = Math.min(oldStep + player.dy, MAX_STEP_CHANGE);
           player.stepTime = player.time;
-          window.pdy = 0;
+          player.dy = 0;
         }
         Object.assign(cameraObject.position, playerMesh.position);
 
         // CG_StepOffset
         // smooth out stair climbing
         var timeDelta = player.time - player.stepTime;
-        // console.log(timeDelta);
         if (!Number.isNaN(timeDelta) && timeDelta < STEP_TIME) {
           cameraObject.position.y -=
             (player.stepChange * (STEP_TIME - timeDelta)) / STEP_TIME;
