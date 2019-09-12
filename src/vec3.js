@@ -6,6 +6,8 @@ export var vec3_create = (x = 0, y = 0, z = 0) => {
   };
 };
 
+var _vector = vec3_create();
+
 export var vec3_set = (v, x, y, z) => {
   v.x = x;
   v.y = y;
@@ -154,6 +156,13 @@ export var vec3_max = (a, b) => {
   return a;
 };
 
+export var vec3_negate = v => {
+  v.x = -v.x;
+  v.y = -v.y;
+  v.z = -v.z;
+  return v;
+};
+
 export var vec3_dot = (a, b) => {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 };
@@ -205,6 +214,18 @@ export var vec3_crossVectors = (v, a, b) => {
   v.z = ax * by - ay * bx;
 
   return v;
+};
+
+export var vec3_reflect = (v, normal) => {
+  // reflect incident vector off plane orthogonal to normal
+  // normal is assumed to have unit length
+  return vec3_sub(
+    v,
+    vec3_multiplyScalar(
+      Object.assign(_vector, normal),
+      2 * vec3_dot(v, normal),
+    ),
+  );
 };
 
 export var vec3_distanceTo = (a, b) => {
