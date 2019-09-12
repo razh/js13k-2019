@@ -1,4 +1,5 @@
 import { face3_clone, face3_create } from './face3.js';
+import { rearg } from './utils.js';
 import {
   vec3_add,
   vec3_clone,
@@ -75,3 +76,8 @@ export var geom_clone = geom => {
   clone.faces = geom.faces.map(face3_clone);
   return clone;
 };
+
+export var translate = rearg(geom_translate);
+export var scale = rearg(geom_scale);
+export var merge = rearg(geom_merge);
+export var clone = rearg(geom_clone);
