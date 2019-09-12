@@ -20,7 +20,18 @@
       font-family: Avenir, Helvetica, Arial, sans-serif;
     }
 
-    .e {
+    @keyframes f {
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    /* Title */
+    .t {
       position: absolute;
       bottom: 0.25em;
       left: 0.4em;
@@ -29,12 +40,13 @@
       line-height: 1;
       text-transform: uppercase;
       user-select: none;
+      animation: f 4s forwards;
     }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
-  <div class="e">Backblast</div>
+  <div class="t">Backblast</div>
   <script type="module" src="./src/index.js"></script>
 </body>
 </html>
