@@ -10,6 +10,7 @@ var shadowMaterial = material_create();
 vec3_setScalar(shadowMaterial.color, 0);
 vec3_setScalar(shadowMaterial.specular, 0);
 shadowMaterial.shininess = 0;
+shadowMaterial.fog = false;
 
 export var shadowMesh_create = mesh => {
   return {
