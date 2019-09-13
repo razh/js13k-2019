@@ -7,8 +7,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     html, body {
       height: 100%;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     body {
@@ -36,38 +44,77 @@
       bottom: 0.25em;
       left: 0.4em;
       font-size: 10vw;
-      font-weight: 600;
+      font-weight: bold;
       line-height: 1;
       text-transform: uppercase;
       user-select: none;
       animation: f 4s forwards;
     }
 
-    /* Health */
-    .h {
+    /* Progress */
+    .p {
       position: absolute;
       width: 1rem;
       height: 50vh;
       top: 50%;
-      right: 1.5rem;
       display: flex;
       flex-direction: column;
       transform: translateY(-50%);
-      border: 0.2rem solid #fff;
+      border: 0.1rem solid #fff;
       opacity: 0.8;
+      user-select: none;
     }
 
     /* Health bar */
+    .h {
+      right: 1.5rem;
+    }
+
+    /* Shield bar */
+    .d {
+      right: 4.5rem;
+    }
+
+    /* Progress bar */
     .b {
       margin-top: auto;
       background: #fff;
+      height: var(--h);
+    }
+
+    .s {
+      position: absolute;
+      bottom: 100%;
+      font-size: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #o {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+    }
+
+    #r {
+      background: none;
+      color: #fff;
+      padding: 0.2em 1em;
+      font-size: 1rem;
+      font-family: inherit;
     }
   </style>
 </head>
-<body>
+<body style="--h: 100%">
   <canvas id="c"></canvas>
   <div class="t">Backblast</div>
-  <div class="h"><div class="b"></div></div>
+  <div class="p h"><div class="s">+</div><div id="h" class="b"></div></div>
+  <div class="p d"><div class="s">&#9671;</div><div id="s" class="b"></div></div>
+  <div id="o" hidden><div>Game over</div><button id="r">Restart</button></div>
   <script type="module" src="./src/index.js"></script>
 </body>
 </html>

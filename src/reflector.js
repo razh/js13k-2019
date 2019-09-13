@@ -1,5 +1,6 @@
 import { boxGeom_create } from './boxGeom.js';
 import { $setX, $setY } from './boxTransforms.js';
+import { component_create, entity_add } from './entity.js';
 import { clone, geom_create, merge, translate } from './geom.js';
 import { material_create } from './material.js';
 import { mesh_create } from './mesh.js';
@@ -13,11 +14,11 @@ import {
 } from './vec3.js';
 
 export var reflector_create = () => {
-  var size = 48;
+  var size = 56;
   var segmentWidth = 4;
   var depth = 1;
   var gap = 8;
-  var physicalDepth = 8;
+  var physicalDepth = 16;
 
   var segmentLength = (size - segmentWidth) / 2;
   var segmentY = (segmentLength + gap) / 2;
@@ -29,18 +30,21 @@ export var reflector_create = () => {
   var material = material_create();
   vec3_setScalar(material.emissive, 1);
 
-  var reflector = physics_add(
-    mesh_create(boxGeom_create(size, size, physicalDepth), material),
-    BODY_STATIC,
+  var reflector = entity_add(
+    physics_add(
+      mesh_create(boxGeom_create(size, size, physicalDepth), material),
+      BODY_STATIC,
+    ),
+    component_create(() => {
+      vec3_applyQuaternion(
+        Object.assign(reflector.normal, vec3_Z),
+        reflector.quaternion,
+      );
+    }),
   );
 
-  reflector.reflector = true;
+  reflector.iR = true;
   reflector.normal = vec3_create();
-
-  vec3_applyQuaternion(
-    Object.assign(reflector.normal, vec3_Z),
-    reflector.quaternion,
-  );
 
   reflector.geometry = compose(
     // Top-left
@@ -86,5 +90,3 @@ export var reflector_create = () => {
 
   return reflector;
 };
-
-export var is_reflector = object => object.reflector;

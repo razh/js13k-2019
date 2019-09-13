@@ -51,7 +51,7 @@ var noteStringToFreq = noteString => {
   var match = noteString.match(noteStringRegex);
   if (match) {
     var [, name, octave] = match;
-    return 12 * (Number(octave) + 1) + noteNames.indexOf(name);
+    return 12 * (+octave + 1) + noteNames.indexOf(name);
   }
 };
 
@@ -197,7 +197,7 @@ var S = E / 2;
 var T = S / 2;
 
 // Waveforms.
-var explosion = mul(add(scale(saw, 0.1), scale(noise, 1)), decay(16));
+var explosion = mul(add(scale(sin, 0.5), scale(noise, 1)), decay(16));
 
 var explosionNotes = generateNotes(explosion, Q, 1);
 
@@ -208,7 +208,7 @@ var startPlaying = async () => {
 };
 
 export var fire = () =>
-  play(sample([explosionNotes.f2, explosionNotes.gs2, explosionNotes.a2]));
+  play(sample([explosionNotes.f1, explosionNotes.gs1, explosionNotes.a1]));
 
 var onClick = () => {
   audioContext.resume();

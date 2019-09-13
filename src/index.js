@@ -40,7 +40,7 @@ gl.enable(gl.DEPTH_TEST);
 gl.enable(gl.CULL_FACE);
 gl.getExtension('OES_standard_derivatives');
 
-var running = false;
+var running = true;
 
 // Scene
 var scene = object3d_create();
@@ -117,9 +117,9 @@ var renderMesh = mesh => {
   setFloatUniform(gl, uniforms.fogNear, scene.fogNear);
   setFloatUniform(gl, uniforms.fogFar, scene.fogFar);
 
-  if (!material.fog) {
-    setFloatUniform(gl, uniforms.fogNear, Infinity);
-  }
+  // if (!material.fog) {
+  //   setFloatUniform(gl, uniforms.fogNear, Infinity);
+  // }
 
   setVec3Uniform(gl, uniforms.diffuse, material.color);
   setVec3Uniform(gl, uniforms.specular, material.specular);
@@ -155,7 +155,7 @@ var render = () => {
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  setVec3Uniform(gl, uniforms.ambientLightColor, lights.ambient);
+  setVec3Uniform(gl, uniforms.ambient, lights.ambient);
 
   lights.directional.map((light, index) => {
     var temp = vec3_create();

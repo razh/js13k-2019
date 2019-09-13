@@ -1,7 +1,14 @@
 export var component_create = options => {
+  let update = () => {};
+
+  if (typeof options === 'function') {
+    update = options;
+    options = {};
+  }
+
   return {
     parent: undefined,
-    update() {},
+    update,
     ...options,
   };
 };
